@@ -3,6 +3,7 @@ FROM ubuntu:22.04@sha256:4f838adc7181d9039ac795a7d0aba05a9bd9ecd480d294483169c5d
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TERM=xterm
 
+# RUN sed -i "s/archive.ubuntu.com/mirrors.aliyun.com/g" /etc/apt/sources.list
 RUN apt-get update && apt-get install -y --no-install-recommends \
     bash-static \
     busybox-static \
@@ -23,6 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /tmp/radare2.deb /var/lib/apt/lists/*
 
 COPY requirements.txt /tmp/requirements.txt
+# RUN python3 -m pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 RUN python3 -m pip install --no-cache-dir --upgrade \
     pip==26.1.1 \
     setuptools==82.0.1 \
@@ -43,3 +45,4 @@ COPY aeg_module /aeg/aeg_module
 COPY ./assets/ /aeg/assets
 COPY ./saeg.py /aeg/
 COPY ./testset.py /aeg/
+COPY ./test_extra_dataset.py /aeg/
