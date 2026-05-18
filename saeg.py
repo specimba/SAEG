@@ -2,7 +2,6 @@
 import json
 import glob
 import os
-import requests
 import argparse
 from pwn import context, log
 from aeg_module import *
