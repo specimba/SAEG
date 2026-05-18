@@ -44,6 +44,10 @@ class HeapOverflowInspector:
         self.call_back_tag = call_back_tag
 
 
+def r2_func_addr(func):
+    return func.get('offset') if func.get('offset') is not None else func.get('addr')
+
+
 def get_win_functions(challenge):
     """
     :return: address list that possibly are win functions
@@ -154,7 +158,9 @@ def pre_process_flirt(challenge):
             else:
                 real_name = func['name'][6:].replace('_libc_', '').replace('_IO_', '').replace('_', '')
             if real_name in challenge.hook_table:
-                recognized_functions.append((real_name, Function(real_name, func['offset'], func['size'], challenge)))
+                func_addr = r2_func_addr(func)
+                if func_addr is not None:
+                    recognized_functions.append((real_name, Function(real_name, func_addr, func['size'], challenge)))
     log.info(f"Found {len(recognized_functions)} functions in total {len(functions)}")
     return recognized_functions
 
@@ -182,7 +188,9 @@ def get_func_block_by_r2(binary):
     functions = [func for func in r2.cmdj('aflj')]
     get_functions = {}
     for func in functions:
-        get_functions[func['name']] = {'addr': func['offset'], 'size': func['size']}
+        func_addr = r2_func_addr(func)
+        if func_addr is not None:
+            get_functions[func['name']] = {'addr': func_addr, 'size': func['size']}
     log.info(f"Found {len(get_functions)} functions")
     return get_functions
 

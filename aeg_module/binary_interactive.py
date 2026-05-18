@@ -109,10 +109,6 @@ class InteractiveBinary:
                         self.current_process.interactive()
                     self.close()
                     raise FlagFound(flag)
-                if b"version `GLIBC_2." in flag and b"' not found (required by " in flag:
-                    log.success(f"Win locally! Received: {flag}")
-                    self.close()
-                    raise FlagFound(b'=====locally success, consider patchelf=====' + flag)
             return flag
         except EOFError:
             self.close()

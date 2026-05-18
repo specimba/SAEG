@@ -1,5 +1,6 @@
 #!/usr/bin/python3
 import json
+import glob
 import os
 import requests
 import argparse
@@ -14,12 +15,21 @@ DEMON_PORT = 13370
 BANNER = "=" * 50 + "\n"
 
 
+def chmod_x(path):
+    os.chmod(path, os.stat(path).st_mode | 0o111)
+
+
+def chmod_x_glob(pattern):
+    for path in glob.glob(pattern):
+        chmod_x(path)
+
+
 def run_exp(_exp, _debug=False, start_time=time.time()):
     try:
         _exp.exploit()
     except Exception as e:
         c = time.time() - start_time
-        if FLAG in str(e) or "locally success" in str(e):  # locally success means challenge GLIBC is not math with ours
+        if FLAG in str(e):
             print(f"Flag found as {str(e)}, cost {c} seconds")
             return True, c
         else:
@@ -32,7 +42,7 @@ def run_exp(_exp, _debug=False, start_time=time.time()):
 
 def local_aeg(file_name, flirt_file=None, lib=None, d=None, timeout=300, debug=False, interactive=False,
               concurrent=-1):
-    subprocess.run(f"chmod +x {file_name}", shell=True)
+    chmod_x(file_name)
     start_time = time.time()
     exp = aeg_main.AEGModule(file_name, 'flag.txt', flirt=flirt_file, libc=lib, ld=d, timeout=timeout, _debug=debug,
                              _interactive=interactive, active_size=concurrent)
@@ -79,20 +89,16 @@ if __name__ == '__main__':
         else:
             context.log_level = 'error'
             pwd = os.getcwd() + '/'
-            if 'ROPgadget' not in os.listdir('/tmp'):
-                subprocess.run(f"cd /tmp && git clone https://github.com/JonathanSalwan/ROPgadget.git &&"
-                               f"cd ROPgadget && git checkout e38c9d7be9bc68cb637f75ac0f9f4d6f41662025", shell=True)
-                subprocess.run(f"cp -r /tmp/ROPgadget/scripts /usr/local/lib/python3.8/dist-packages/"
-                               f"ROPGadget-7.3.dist-info", shell=True)
             result = BANNER
             TESTS = TEST_SET_MAP[args.batch_test]
-            subprocess.run(f"chmod +x assets/*.so", shell=True)
-            subprocess.run(f"chmod +x assets/*.so.?", shell=True)
+            chmod_x_glob("assets/*.so")
+            chmod_x_glob("assets/*.so.?")
             for test_set_name, test_set in TESTS.items():
                 result += f"Testing {test_set_name} in {test_set['path']}\n"
                 failed = 0
                 failed_str = ""
-                subprocess.run(f"chmod +x {test_set['path']}/*", shell=True)
+                test_timeout = int(test_set.get('timeout', args.timeout))
+                chmod_x_glob(f"{test_set['path']}/*")
                 for task_name, baseline_time in test_set['task'].items():
                     to_test = test_set['path'] + task_name
                     print(f"Testing {to_test}")
@@ -101,11 +107,11 @@ if __name__ == '__main__':
                     ld = pwd + 'assets/' + test_set.get('ld') if 'ld' in test_set else None
                     if 'static' in test_set and task_name in test_set['static']:
                         ld = None
-                    res, cost = local_aeg(to_test, flirt, libc, ld, int(args.timeout), args.debug,
+                    res, cost = local_aeg(to_test, flirt, libc, ld, test_timeout, args.debug,
                                           concurrent=int(args.concurrent))
                     for extra_try in range(5):
                         if (not res and cost < 100) or cost > baseline_time:
-                            res, cost = local_aeg(to_test, flirt, libc, ld, int(args.timeout), args.debug,
+                            res, cost = local_aeg(to_test, flirt, libc, ld, test_timeout, args.debug,
                                                   concurrent=int(args.concurrent))
                     if res:
                         if baseline_time != FAIL_MAX:

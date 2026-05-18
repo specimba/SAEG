@@ -41,7 +41,15 @@ class AddrLeak:
 def check_addr_leak(state_raw):
     binary = state_raw.globals['binary']
     stdout = state_raw.posix.dumps(1)[binary.io_seg_addr['stdout_offset']:]
-    if len(stdout) > 3 and (LEAK_COMMON in stdout or LEAK_COMMON_HEX in stdout):
+    leak_markers = (
+        LEAK_COMMON,
+        LEAK_COMMON_HEX,
+        ARCH_32_PRE_HEX,
+        ARCH_64_PRE_HEX,
+        ARCH_64_MMAP_PRE_HEX,
+        ARCH_64_HEAP_PRE_HEX,
+    )
+    if len(stdout) > 3 and any(marker in stdout for marker in leak_markers):
         # double check if it is a real necessary leak
         if ((ARCH_64_MMAP_PRE in stdout or ARCH_64_MMAP_PRE_HEX in stdout) and not binary.io_seg_addr.get('libc')) \
                 or ((ARCH_64_HEAP_PRE in stdout or ARCH_64_HEAP_PRE_HEX in stdout) and not binary.io_seg_addr.get(
@@ -129,8 +137,11 @@ def do_addr_leak(state, stdin, stdout, binary):
                 find_str = stdout.split(ARCH_64_PRE_HEX)[0][-4:]
                 real_rec = binary.warped_io(state, stdin, has_newline=False)
                 if find_str in real_rec or find_str == b'':
-                    find_str = b' ' if find_str == b'' else find_str
-                    real_leak_text = int(real_rec.split(find_str)[1][:12], 16)
+                    leak_raw = real_rec if find_str == b'' else real_rec.split(find_str)[1]
+                    leak_raw = leak_raw.strip()
+                    if leak_raw.startswith(b'0x'):
+                        leak_raw = leak_raw[2:]
+                    real_leak_text = int(leak_raw[:12], 16)
             if real_leak_text & 0xfff == leak_text & 0xfff:
                 log.success(f"Leak stdout address: {hex(real_leak_text)}")
                 text_base = real_leak_text - offset

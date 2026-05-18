@@ -60,7 +60,6 @@ class AEGModule:
         extras = {
             so.REVERSE_MEMORY_NAME_MAP,
             so.TRACK_ACTION_HISTORY,
-            so.UNICORN,
             so.SYMBOL_FILL_UNCONSTRAINED_REGISTERS,
             so.ZERO_FILL_UNCONSTRAINED_MEMORY,
         }
