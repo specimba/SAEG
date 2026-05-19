@@ -51,7 +51,7 @@ pwn remote with libc and ld specified:
 ```sh
 python3 saeg.py -f input_file -l [LIBC.so] -d [LD.so] -i [ip:port]
 # for example:
-python3 saeg.py -f ./vuln -l `pwd`/libc.so -d ./ld.so -i 192.168.1.1:1337
+# python3 saeg.py -f ./vuln -l `pwd`/libc.so -d ./ld.so -i 192.168.1.1:1337
 ```
 Get help message:
 ```sh
